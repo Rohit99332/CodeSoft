@@ -1,0 +1,153 @@
+import tkinter
+import threading
+import time
+from datetime import datetime
+import platform
+
+root = tkinter.Tk()
+root.configure(bg="black")
+root.title("My To-Do-List")
+
+tasks = []
+
+#defining a functions
+
+def update_listbox():
+    clear_listbox()
+    for i, (num, task, date, completed) in enumerate(tasks, start=1):
+        status = "✓" if completed else "✗"
+        lb_tasks.insert("end", f"{i}. {task} (Due: {date}) [{status}]")
+
+def clear_listbox():
+    lb_tasks.delete(0, "end")
+
+def add_task():
+    task = txt_input.get()
+    due_date = txt_date.get()
+    if task and due_date:
+        try:
+            datetime.strptime(due_date, "%Y-%m-%d")
+            tasks.append((len(tasks) + 1, task, due_date, False))
+            update_listbox()
+            txt_input.delete(0, "end")
+            txt_date.delete(0, "end")
+            lbl_display.config(text="Task added!", fg="green")
+        except ValueError:
+            lbl_display.config(text="Enter a valid date (YYYY-MM-DD)!", fg="red")
+    else:
+        lbl_display.config(text="Enter a task and a due date!", fg="red")
+
+def del_all():
+    tasks.clear()
+    update_listbox()
+
+def del_one():
+    try:
+        selected_index = lb_tasks.curselection()[0]
+        del tasks[selected_index]
+        update_listbox()
+    except IndexError:
+        lbl_display.config(text="Select a task to delete!", fg="red")
+
+def sort_asc():
+    tasks.sort(key=lambda x: x[2])
+    update_listbox()
+
+def sort_desc():
+    tasks.sort(key=lambda x: x[2], reverse=True)
+    update_listbox()
+
+def completed():
+    try:
+        selected_index = lb_tasks.curselection()[0]
+        num, task, date, completed = tasks[selected_index]
+        tasks[selected_index] = (num, task, date, not completed)
+        update_listbox()
+    except IndexError:
+        lbl_display.config(text="Select a task to mark as completed!", fg="red")
+
+def exit_app():
+    root.destroy()
+
+def set_reminder():
+    task = txt_input.get()
+    try:
+        reminder_time = int(txt_reminder.get())
+        if task and reminder_time > 0:
+            lbl_display.config(text=f"Reminder set for '{task}' in {reminder_time} Seconds", fg="green")
+            threading.Thread(target=remind_task, args=(task, reminder_time), daemon=True).start()
+        else:
+            lbl_display.config(text="Enter a valid task and time!", fg="red")
+    except ValueError:
+        lbl_display.config(text="Enter a valid number for time!", fg="red")
+
+def remind_task(task, reminder_time):
+    time.sleep(reminder_time)
+    play_beep()
+    lbl_display.config(text=f"Reminder: {task}!", fg="yellow")
+
+def play_beep():
+    if platform.system() == "Windows":
+        import winsound
+        winsound.Beep(600, 1500)
+    else:
+        print("\a")
+
+#layout
+
+lbl_title = tkinter.Label(root, text="To-Do-List", bg="black", fg="white", font=("Arial", 20))
+lbl_title.grid(row=0, column=0, columnspan=2, pady=10)
+
+lbl_display = tkinter.Label(root, text="", bg="black", fg="white")
+lbl_display.grid(row=1, column=0, columnspan=2)
+
+#inputs
+txt_input = tkinter.Entry(root, width=30)
+txt_input.grid(row=2, column=0, padx=10, pady=5, sticky="w")
+txt_input.insert(0, "Enter Task")
+
+txt_date = tkinter.Entry(root, width=25)
+txt_date.grid(row=3, column=0, padx=10, pady=5, sticky="w")
+txt_date.insert(0, "YYYY-MM-DD (Due Date)")
+
+
+txt_reminder = tkinter.Entry(root, width=18)
+txt_reminder.grid(row=4, column=0, padx=10, pady=5, sticky="w")
+txt_reminder.insert(0, "Reminder (Seconds)")
+
+#assigning buttons 
+
+btn_add_task = tkinter.Button(root, text="Add Task", fg="white", bg="black", command=add_task)
+btn_add_task.grid(row=5, column=0, padx=10, pady=5, sticky="w")
+
+btn_del_all = tkinter.Button(root, text="Delete All", fg="white", bg="black", command=del_all)
+btn_del_all.grid(row=6, column=0, padx=10, pady=5, sticky="w")
+
+btn_del_one = tkinter.Button(root, text="Delete One", fg="white", bg="black", command=del_one)
+btn_del_one.grid(row=7, column=0, padx=10, pady=5, sticky="w")
+
+btn_sort_asc = tkinter.Button(root, text="Sort Ascending", fg="white", bg="black", command=sort_asc)
+btn_sort_asc.grid(row=8, column=0, padx=10, pady=5, sticky="w")
+
+btn_sort_desc = tkinter.Button(root, text="Sort Descending", fg="white", bg="black", command=sort_desc)
+btn_sort_desc.grid(row=9, column=0, padx=10, pady=5, sticky="w")
+
+btn_completed = tkinter.Button(root, text="Completed", fg="white", bg="black", command=completed)
+btn_completed.grid(row=10, column=0, padx=10, pady=5, sticky="w")
+
+btn_set_reminder = tkinter.Button(root, text="Set Reminder", fg="white", bg="black", command=set_reminder)
+btn_set_reminder.grid(row=11, column=0, padx=10, pady=5, sticky="w")
+
+btn_exit = tkinter.Button(root, text="Exit", fg="white", bg="black", command=exit_app)
+btn_exit.grid(row=12, column=0, padx=10, pady=5, sticky="w")
+
+#Task List
+lb_tasks = tkinter.Listbox(root, width=80, height=35)
+lb_tasks.grid(row=2, column=1, rowspan=11, padx=10, pady=5)
+
+#creator
+
+lbl_Created_by = tkinter.Label(root, text="Created by: Rohit Shelar", bg="black", fg="white", font=("Arial", 10))
+lbl_Created_by.grid(row=0, column=1, sticky="ne", padx=10, pady=10)
+
+root.mainloop()
